@@ -1,6 +1,5 @@
 # Pasos para crear esta application
 
-## Abrir y cerrar elemento FORM
 - Crear una CLASS para nuestra app
 - Agararse a varios elementos en el DOM
 - Crear una function para los eventListeners
@@ -18,3 +17,11 @@
 - Reasignamos nuestro array, con todas las notas ya existente tilizando spread operator y añadiendo la nueva nota al final
 - Llamar la function para mostrar la nota en el DOM 
 - Averiguar si hay notas. Mostrar o ocultar placeholder dependiendo de que si hay o no las notas en el array
+- Insertar en el DOM todas las notas utilizando innerHTML y metodo .map() encima de nuestro array
+- Añadir evento click a nuestro botton de cierre del formulario
+- Resolver ta tarea donde cuando haces click sobre el body (mientras ya has introducido algun texto dentro de .value) debe guardar una nueva nota y cerrar formulario.
+- Añadir div modal en el .html para edicion de notas
+- Crear la function para selecionar la nota y en ella selectionar la nota con el metodo event.target.closest()
+- Obtener la informacion que esta en la nota y actualizar variables globales con estos datos
+- Crear la function que abre modal, selectionar la nota, abrir moda y rellenar los datos
+- 
