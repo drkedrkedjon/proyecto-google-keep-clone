@@ -1,7 +1,8 @@
 class App {
   constructor() {
-    // Array para guardar las notas y variables para manipular datos
-    this.notes = []
+    // Array para guardar las notas. Si hay notas en LocalStorage cargarlas y si no asignamos un array vacio
+    this.notes = JSON.parse(localStorage.getItem('notes')) || []
+    // Variables (llaves de objeto) globales
     this.title = ''
     this.text = ''
     this.id = ''
@@ -18,7 +19,9 @@ class App {
     this.$modalTitle = document.querySelector(".modal-title")
     this.$modalText = document.querySelector(".modal-text")
     this.$modalCloseButton = document.querySelector('.modal-close-button')
+    this.$colorTooltip = document.querySelector('#color-tooltip')
 
+    this.render()
     this.addEventListeners() // Ejecutar la function que activa varios eventListeners
   }
 
@@ -28,7 +31,33 @@ class App {
       this.handleFormClick(event) // Llamamos segunda function pasandola el evento
       this.selectNote(event) // Selectionar nota adecuada para presentar el contenido de la misma en el modal
       this.openModal(event) // Ver si hemos hecho click encima de una nota y abrirla en el modal
+      this.deleteNote(event) // Eliminar la nota
+
     })
+    // Añadimos a body un evento mouseover
+    document.body.addEventListener('mouseover', event => {
+    // Function que abre tooltip para cambiar color de la nota
+      this.openTooltip(event)
+    })
+    // Function que cierra tooltip para cambiar color de la nota
+    document.body.addEventListener('mouseout', event => {
+      this.closeTooltip(event);  
+   });
+   // Function que mantiene abierto tooltip con el raton encima. Usamos declaracion para usar this.style en lugar de $colorTooltip.style con => function
+   this.$colorTooltip.addEventListener('mouseover', function() {
+    this.style.display = 'flex';  
+  })
+  // Function que cierra tooltip con el raton fuera
+  this.$colorTooltip.addEventListener('mouseout', function() {
+     this.style.display = 'none'; 
+  });
+  // Un evento para cambiar el color del fondo
+  this.$colorTooltip.addEventListener('click', event => {
+    const color = event.target.dataset.color; 
+    if (color) {
+      this.editNoteColor(color);  
+    }
+ })
 
     // Añadimos a $form un evento submit
     this.$form.addEventListener('submit', event => {
@@ -51,6 +80,12 @@ class App {
       event.stopPropagation();
       this.closeForm()
     })
+
+    // Event listener para el boton de cierre de modal
+    this.$modalCloseButton.addEventListener('click', event => {
+      this.closeModal(event)
+    })
+
   }
 
   handleFormClick(event) {
@@ -84,6 +119,9 @@ class App {
   }
   // Function que abre el modal para edicion de notas
   openModal(event) {
+    // Sirve para que no se sigue ejecutando la funcion en el caso de hacer click sobre los botones de color y borrar en la nota
+    if (event.target.matches('.toolbar-delete')) return;
+    if (event.target.matches('.toolbar-color')) return;
     // .closest metodo sirve para selectionar el elemento con classe .note mas cercano al evento target (body). Osea, la nota cual hemos pinchado.
     if (event.target.closest('.note')) {
       this.$modal.classList.toggle('open-modal')
@@ -91,6 +129,32 @@ class App {
       this.$modalText.value = this.text
     }
   }
+  // Function que cierra el modal
+  closeModal(event) {
+    this.editNote()
+    this.$modal.classList.toggle('open-modal')
+  }
+  // Abrir tooltip de los colores
+  openTooltip(event) {
+    // Para bloquear el evento mouseover de todo menos icono de colores
+    if (!event.target.matches('.toolbar-color')) return;
+    // Buscamos el ID de la nota
+    this.id = event.target.dataset.id;
+    // Obtenemos las coordinadas de la ubucacion de nuestro icono de colores en la referencia del borde de la ventana
+    const noteCoords = event.target.getBoundingClientRect();
+    // A estas coordenadas hay que añadir lo que hemos scroll el documento pa arriba o pa lado
+    const horizontal = noteCoords.left + window.scrollX;
+    const vertical = noteCoords.top + window.scrollY + 5; // + 5 para bajar tooltip hacia raton
+    //  Utilizamos estas coordenadas para colocar en DOM el tooltip usandotransform translate de CSS
+    this.$colorTooltip.style.transform = `translate(${horizontal}px, ${vertical}px)`;
+    this.$colorTooltip.style.display = 'flex';
+  }
+  // Cerrar el toolbar de colores
+  closeTooltip(event) {
+    if (!event.target.matches('.toolbar-color')) return;
+    this.$colorTooltip.style.display = 'none'; 
+  }
+
 
   // Function que añade una nueva nota (objeto)
   addNote({title, text}) {
@@ -105,9 +169,30 @@ class App {
     // Reasignamos nuestro array, con todas las notas ya existente tilizando spread operator y añadiendo la nueva nota al final
     this.notes = [...this.notes, newNote]
     // Llamar la function para mostrar la nota en el DOM 
-    this.displayNotes()
+    this.render()
     this.closeForm()
   }
+  //  La funcion cual edita la nota
+  editNote() {
+    // Cojer valor entrado por usuario en campos de texto
+    const title = this.$modalTitle.value
+    const text = this.$modalText.value
+    // Hacer un map por el array que contiene todas las notas y actualizar la nota editada
+    this.notes = this.notes.map( note => 
+      note.id === Number(this.id) ? { ...note, title, text} : note
+    )
+    // Mostrar nuevamente las notas en el DOM
+    this.render()
+  }
+  // Cambiar el color de nota
+  editNoteColor(color) {
+    this.notes = this.notes.map(note =>
+      note.id === Number(this.id) ? { ...note, color } : note
+    );
+    this.render();
+  }
+
+
   // Function que seleciona la nota para presentar su contenido en el modal
   selectNote(event) {
     const $selectedNote = event.target.closest('.note'); // Seleccionar la nota
@@ -118,7 +203,26 @@ class App {
     this.text = $noteText.innerText
     this.id = $selectedNote.dataset.id // Con dataset puedemos leer lo que hay en data-id="${note.id} en la etiqueta HTML de la nota sellecionada.
   }
+  // Borrar la nota
+  deleteNote(event) {
+    event.stopPropagation();
+    if (!event.target.matches('.toolbar-delete')) return;
+    const id = event.target.dataset.id;
+    // Devuele con .filter todas las notas menos la que coincida con .note.id de la nota que quieremos borrar
+    this.notes = this.notes.filter(note => note.id !== Number(id));
+    this.render();
+  }
 
+  render() {
+    this.saveNotes()
+    this.displayNotes()
+  }
+
+  saveNotes() {
+    localStorage.setItem('notes', JSON.stringify(this.notes))
+  }
+
+  // Para mostrart la nota en el DOM
   displayNotes() {
     // Averiguar si hay notas.
     const hasNotes = this.notes.length > 1
@@ -131,8 +235,8 @@ class App {
           <div class="note-text">${note.text}</div>
           <div class="toolbar-container">
             <div class="toolbar">
-              <img class="toolbar-color" src="keep_48dp.png">
-              <img class="toolbar-delete" src="keep_48dp.png">
+              <img class="toolbar-color" data-id=${note.id} src="keep_48dp.png">
+              <img class="toolbar-delete" data-id=${note.id} src="keep_48dp.png">
             </div>
           </div>
         </div>
