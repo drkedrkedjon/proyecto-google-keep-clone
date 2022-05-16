@@ -9,6 +9,7 @@
 - En ella crear variable y devolver boolean si el formulario contain el evento.target
 - Usar la variable con boolean en el condicional para ejecutar otras dos functiones que manejan DOM para abrir o cerrar el FORM formulario.
 - Añadir evenListener a formulario on submit (dentro de la function de los eventos)
+
 - Dentro del evento usar event.preventDefault() para evitar la recarga de la pagina por defecto
 - Recoger contenido escrito por el usuario con .value en unas variables
 - Ver si el usuario ha escrito algo. En caso true llamar function que añade una nota nueva pasando un objeto con contenido de la nota como argumento
